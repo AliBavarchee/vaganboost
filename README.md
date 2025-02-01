@@ -25,7 +25,12 @@ train.run()
 See `requirements.txt` for required packages.
 
 ## License
-MIT License.
 
-## Contact
-For inquiries, reach out to the authors.
+This project is licensed under the MIT License.
+---
+
+=============================================<p align="Center">![ALI BAVARCHIEE](https://teal-broad-gecko-650.mypinata.cloud/ipfs/bafkreif332ra4lrdjfzaiowc2ikhl65uflok37e7hmuxomwpccracarqpy)</p>=============================================
+=====
+| https://github.com/AliBavarchee/ |
+----
+| https://www.linkedin.com/in/ali-bavarchee-qip/ |
