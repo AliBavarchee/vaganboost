@@ -1,6 +1,6 @@
 # VAGANBoost
 
-![VAGANBoost Logo](https://teal-broad-gecko-650.mypinata.cloud/ipfs/bafybeibo6oufankrhmx42dhjebe3saakutzjv2mrxv3zraqum7pry3jp74)
+![VAGANBoost Logo](https://teal-broad-gecko-650.mypinata.cloud/ipfs/bafybeicfrxxm3kmvh4sswyqtcueqj3rxx3sknwnypriu7vfg2umzkwkihu)
 
 ## Introduction
 VAGANBoost is a hybrid generative model combining Variational Autoencoders (VAE) and Generative Adversarial Networks (GAN) with boosting techniques to enhance high-energy gamma-ray analysis.
