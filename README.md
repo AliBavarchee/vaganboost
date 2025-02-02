@@ -1,4 +1,4 @@
-# VaganBoost: Hybrid VAE-GAN + LightGBM for Advanced Classification 0.7.6
+# VaganBoost: Hybrid VAE-GAN + LightGBM for Advanced Classification 0.7.7
 
 ![VAGANBoost Logo](https://teal-broad-gecko-650.mypinata.cloud/ipfs/bafybeicfrxxm3kmvh4sswyqtcueqj3rxx3sknwnypriu7vfg2umzkwkihu)
 
