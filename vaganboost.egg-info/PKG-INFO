@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: vaganboost
-Version: 0.7.6
+Version: 0.7.7
 Summary: A hybrid model combining VAE, GAN, and LightGBM for boosting performance in high-energy physics or data analysis tasks.
 Home-page: https://github.com/AliBavarchee/vaganboost
 Author: Ali Bavarchee
