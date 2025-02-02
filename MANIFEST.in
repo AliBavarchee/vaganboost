@@ -1,0 +1,21 @@
+include LICENSE
+include README.md
+include requirements.txt
+include pyproject.toml
+
+recursive-include vaganboost *.py
+recursive-include vaganboost *.md
+recursive-include vaganboost *.txt
+
+include vaganboost/data/*.csv
+include vaganboost/data/*.json
+
+recursive-include tests *.py
+recursive-include examples *.py
+recursive-include docs *.md
+
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude *.dll
