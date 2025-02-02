@@ -45,10 +45,6 @@ import seaborn as sns
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix, classification_report
 
 
-%matplotlib inline
-import imageio
-#import plotly.express as px
-
 import torch.nn as nn
 from torch.utils.data import TensorDataset, Dataset, DataLoader
 from torchvision import transforms
@@ -62,9 +58,6 @@ import csv
 import seaborn as sns
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix, classification_report
 
-
-%matplotlib inline
-import imageio
 #import plotly.express as px
 
 
