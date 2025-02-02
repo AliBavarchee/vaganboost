@@ -1,0 +1,16 @@
+LICENSE
+MANIFEST.in
+README.md
+requirements.txt
+setup.py
+vaganboost/__init__.py
+vaganboost/data_utils.py
+vaganboost/models.py
+vaganboost/train.py
+vaganboost/utils.py
+vaganboost.egg-info/PKG-INFO
+vaganboost.egg-info/SOURCES.txt
+vaganboost.egg-info/dependency_links.txt
+vaganboost.egg-info/entry_points.txt
+vaganboost.egg-info/requires.txt
+vaganboost.egg-info/top_level.txt
