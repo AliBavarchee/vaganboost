@@ -6,7 +6,7 @@
 VAGANBoost is a hybrid generative model combining Variational Autoencoders (VAE) and Generative Adversarial Networks (GAN) with boosting techniques to enhance high-energy gamma-ray analysis.
 
 ## Outlines
-- Implements cVAE+cGAN and cGAN+cVAE+RandomForest models
+- Implements VAE+GAN and LGBM models
 - Designed for high-energy physics applications
 - Utilizes deep learning and gradient boosting techniques
 
