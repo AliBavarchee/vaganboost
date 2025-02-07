@@ -1,0 +1,17 @@
+LICENSE
+README.md
+setup.py
+vaganboostktf/__init__.py
+vaganboostktf/cgan.py
+vaganboostktf/cli.py
+vaganboostktf/cvae.py
+vaganboostktf/data_preprocessor.py
+vaganboostktf/lgbm_tuner.py
+vaganboostktf/trainer.py
+vaganboostktf/utils.py
+vaganboostktf.egg-info/PKG-INFO
+vaganboostktf.egg-info/SOURCES.txt
+vaganboostktf.egg-info/dependency_links.txt
+vaganboostktf.egg-info/entry_points.txt
+vaganboostktf.egg-info/requires.txt
+vaganboostktf.egg-info/top_level.txt

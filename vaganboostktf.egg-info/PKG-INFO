@@ -1,3 +1,33 @@
+Metadata-Version: 2.1
+Name: vaganboostktf
+Version: 0.9.1
+Summary: Hybrid VAE-GAN with LightGBM for class-imbalanced classification
+Home-page: https://github.com/AliBavarchee/vaganboost
+Author: Ali Bavarchee
+Author-email: ali.bavarchee@gmail.com
+License: MIT
+Keywords: machine-learning,deep-learning,data-augmentation,class-imbalance,vae,gan,lightgbm
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: dill>=0.3.9
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: pandas>=1.3.0
+Requires-Dist: tensorflow>=2.8.0
+Requires-Dist: keras>=3.8.0
+Requires-Dist: scikit-learn>=1.0.0
+Requires-Dist: lightgbm>=3.3.0
+Requires-Dist: scipy>=1.7.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: seaborn>=0.11.0
+Requires-Dist: joblib>=1.1.0
+Requires-Dist: tqdm>=4.64.0
+
 # vaganboostktf: VAE-GAN Boost by TF
 
 =============================================<p align="Center">![vaganboostktf](https://teal-broad-gecko-650.mypinata.cloud/ipfs/bafybeiew72v2a7okbxdawl6febkahxeulpxkjylizttacz5xfreq4d675q)</p>=============================================
