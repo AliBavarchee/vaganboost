@@ -42,7 +42,8 @@ import joblib
 from pathlib import Path
 import dill
 from vaganboostktf.data_preprocessor import DataPreprocessor
-from vaganboostktf.cgan import CVAE, CGAN
+from vaganboostktf.cvae import CVAE
+from vaganboostktf.cgan import CGAN
 from vaganboostktf.lgbm_tuner import LightGBMTuner
 from vaganboostktf.trainer import HybridModelTrainer
 from vaganboostktf.utils import plot_confusion_matrix, plot_roc_curves, plot_pr_curves
