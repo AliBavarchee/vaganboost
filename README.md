@@ -167,6 +167,8 @@ graph TD
 - **LightGBM Tuner**: Optimized gradient boosting with automated hyperparameter search
 - **Hybrid Trainer**: Orchestrates iterative training process
 
+
+## Architecture 2
 ```mermaid
 graph TD;
     A[Raw Data (CSV)] --> B[DataPreprocessor];
