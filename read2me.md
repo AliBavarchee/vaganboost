@@ -15,15 +15,15 @@ VaganBoostKFT is a hybrid machine learning package that integrates generative mo
 Below is an overview of the hybrid generative model architecture implemented in VaganBoostKFT:
 
 ```mermaid
-graph TD;
-    A[Raw Data (CSV)] --> B[DataPreprocessor];
-    B --> C[Preprocessed Data];
-    C --> D[CVAE];
-    C --> E[CGAN];
-    D --> F[Synthetic Data (CVAE)];
-    E --> G[Synthetic Data (CGAN)];
-    F --> H[Combined Real & Synthetic Data];
-    G --> H;
-    H --> I[LightGBM Classifier Pipeline];
-    I --> J[Evaluation (Confusion Matrix, ROC, PR Curves)];
-    J --> K[Best Models Saved];
+graph TD
+    A["Raw Data (CSV)"] --> B["DataPreprocessor"]
+    B --> C["Preprocessed Data"]
+    C --> D["CVAE"]
+    C --> E["CGAN"]
+    D --> F["Synthetic Data (CVAE)"]
+    E --> G["Synthetic Data (CGAN)"]
+    F --> H["Combined Real & Synthetic Data"]
+    G --> H
+    H --> I["LightGBM Classifier Pipeline"]
+    I --> J["Evaluation (Confusion Matrix, ROC, PR Curves)"]
+    J --> K["Best Models Saved"]
