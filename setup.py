@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="vaganboostktf",
-    version="0.9.1",
+    version="0.9.6",
     author="Ali Bavarchee",
     author_email="ali.bavarchee@gmail.com",
     description="Hybrid VAE-GAN with LightGBM for class-imbalanced classification",

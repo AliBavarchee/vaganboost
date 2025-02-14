@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: vaganboostktf
-Version: 0.9.1
+Version: 0.9.6
 Summary: Hybrid VAE-GAN with LightGBM for class-imbalanced classification
 Home-page: https://github.com/AliBavarchee/vaganboost
 Author: Ali Bavarchee
@@ -36,7 +36,10 @@ Requires-Dist: tqdm>=4.64.0
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Hybrid generative-classification framework combining Conditional VAE, Conditional GAN, and LightGBM for handling class-imbalanced classification tasks.
+# VaganBoostKFT
+
+VaganBoostKFT is a hybrid machine learning package that integrates generative modeling (using CVAE and CGAN) with an advanced LightGBM classifier pipeline. It provides robust data preprocessing, custom sampling strategies for imbalanced data, automated hyperparameter tuning (including dimensionality reduction via PCA, LDA, or TruncatedSVD), and built-in visualization of model evaluation metrics (confusion matrices, ROC curves, and precision-recall curves).
+
 
 ## Features
 
@@ -49,6 +52,23 @@ Hybrid generative-classification framework combining Conditional VAE, Conditiona
 
 ## Installation
 
+Install the required dependencies:
+
+```bash
+pip install dill
+pip install dask[dataframe]
+pip install umap-learn
+```
+
+Additional dependencies (if not already installed) include:
+- scikit-learn
+- imbalanced-learn
+- lightgbm
+- tensorflow
+- seaborn
+- matplotlib
+- joblib
+
 ```bash
 pip install vaganboostktf
 ```
@@ -60,133 +80,119 @@ cd vaganboostktf
 pip install -e .
 ```
 
-## Usage
+## Modules
 
-### Basic Python API
+- **data_preprocessor.py:** Provides consistent data preprocessing (scaling, handling missing values, and encoding).
+- **trainer.py:** Orchestrates the hybrid training workflow combining generative models (CVAE, CGAN) and the LightGBM classifier.
+- **lgbm_tuner.py:** Implements hyperparameter tuning for the advanced LightGBM pipeline.
+- **lgbm_classifier.py:** Contains the full LightGBM classifier pipeline that integrates preprocessing, feature selection, dimensionality reduction, SMOTE balancing (with custom sampling strategies), and hyperparameter tuning.
+- **utils.py:** Provides utility functions for visualization (confusion matrix, ROC curves, precision-recall curves) and helper classes like `DecompositionSwitcher`.
+
+## Usage Example
+
+Below is a sample script demonstrating how to use VaganBoostKFT:
 
 ```python
-import math
-import numpy as np
 import pandas as pd
-import joblib
-from pathlib import Path
-import dill
+import numpy as np
 from vaganboostktf.data_preprocessor import DataPreprocessor
-from vaganboostktf.cgan import CGAN
-from vaganboostktf.lgbm_tuner import LightGBMTuner
 from vaganboostktf.trainer import HybridModelTrainer
+from vaganboostktf.lgbm_tuner import LightGBMTuner
 from vaganboostktf.utils import plot_confusion_matrix, plot_roc_curves, plot_pr_curves
 
-# Load and prepare data
-df = pd.read_csv("Input.csv")
+# ===========================
+# 1. Load and Prepare Data
+# ===========================
+df = pd.read_csv("input.csv")
 
 # Identify features and target
-feature_columns = [f"ClE{i}" for i in range(1, 26)]  # 25 features
+feature_columns = [col for col in df.columns if col != "label"]
 target_column = "label"
 
 # Initialize data preprocessor
 preprocessor = DataPreprocessor()
-X_train, X_test, y_train, y_test = preprocessor.prepare_data(
-    df,
-    feature_columns=[f"ClE{i}" for i in range(1, 26)],
-    target_column="label"
-)
 
-# Prepare scaled datasets
+# Preprocess data (handling missing values, scaling, encoding)
 X_train_scaled, X_test_scaled, y_train, y_test = preprocessor.prepare_data(
-    df,
-    feature_columns=feature_columns,
-    target_column=target_column
+    df, feature_columns, target_column
 )
 
-# Initialize and train hybrid model
+# ===========================
+# 2. Train Hybrid Model (CVAE, CGAN + LGBM)
+# ===========================
 trainer = HybridModelTrainer(config={
     'num_classes': 4,
     'cvae_params': {
         'input_dim': 25,
-        'latent_dim': 8,
+        'latent_dim': 10,
         'num_classes': 4,
         'learning_rate': 0.01
     },
     'cgan_params': {
         'input_dim': 25,
-        'latent_dim': 8,
+        'latent_dim': 10,
         'num_classes': 4,
         'generator_lr': 0.0002,
         'discriminator_lr': 0.0002
     },
     'model_dir': 'trained_models',
-    'cvae_epochs': 10,
-    'cgan_epochs': 10,
-    'lgbm_iterations': 10,
+    'cvae_epochs': 100,
+    'cgan_epochs': 100,
+    'lgbm_iterations': 100,
     'samples_per_class': 50
 })
-trainer.training_loop(
-    X_train_scaled, y_train,
-    X_test_scaled, y_test,
-    iterations=5
-)
 
-print("Training completed! Best models saved in 'trained_models' directory")
+# Run hybrid training (Generative + LGBM)
+trainer.training_loop(X_train_scaled, y_train, X_test_scaled, y_test, iterations=5)
+print("\nHybrid training completed! Models saved in 'trained_models/'")
 
-# Visualization of the metrics and results
+# ===========================
+# 3. Load and Evaluate LightGBM Model
+# ===========================
+lgbm_tuner = LightGBMTuner(input_path="input.csv", output_path="trained_models")
 
-# Load trained LightGBM model
-lgbm_model = joblib.load("trained_models/lgbm_model.pkl")
+# Train the LightGBM model (already tuned within `lgbm_classifier`)
+lgbm_tuner.tune()
 
-# Get predictions
-y_pred = lgbm_model.predict(X_test_scaled)
-y_proba = lgbm_model.predict_proba(X_test_scaled)
+# Predict on test data
+y_pred = lgbm_tuner.predict(X_test_scaled)
+y_proba = lgbm_tuner.predict_proba(X_test_scaled)
 
-# Define class names
+# ===========================
+# 4. Visualize Results
+# ===========================
 class_names = [str(i) for i in np.unique(y_test)]
 
-# Plot and save confusion matrix
-conf_matrix_fig = plot_confusion_matrix(y_test, y_pred, classes=class_names, normalize=True)
+# Plot Confusion Matrix
+conf_matrix_fig = plot_confusion_matrix(y_test, y_pred, class_names, normalize=True)
 conf_matrix_fig.savefig("trained_models/confusion_matrix.png")
 
-# Plot and save ROC curves
-roc_curve_fig = plot_roc_curves(y_test, y_proba, classes=class_names)
-roc_curve_fig.savefig("trained_models/roc_curves.png")
+# Plot ROC Curves
+roc_curve_fig = plot_roc_curves(y_test, y_proba, class_names)
+roc_curve_fig.savefig("trained_models/roc_curve.png")
 
-# Plot and save Precision-Recall curves
-pr_curve_fig = plot_pr_curves(y_test, y_proba, classes=class_names)
-pr_curve_fig.savefig("trained_models/pr_curves.png")
+# Plot Precision-Recall Curves
+pr_curve_fig = plot_pr_curves(y_test, y_proba, class_names)
+pr_curve_fig.savefig("trained_models/pr_curve.png")
 
-# Extract feature importances and corresponding feature names
-feature_importance = lgbm_model.feature_importances_
-feature_names = [f"ClE{i}" for i in range(1, 26)]  # 25 features
-
-# Create a DataFrame for sorting
-importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importance})
-importance_df = importance_df.sort_values(by='Importance', ascending=False).head(10)  # Top 10 features
-
-# Plot feature importance
-plt.figure(figsize=(10, 6))
-sns.barplot(x='Importance', y='Feature', data=importance_df, palette='Blues_r')
-plt.xlabel("Importance Score")
-plt.ylabel("Feature")
-plt.title("Top 10 Most Important Features")
-plt.grid(axis='x', linestyle='--', alpha=0.6)
-
-# Save and show plot
-plt.savefig("trained_models/top_10_features.png", bbox_inches='tight')
-plt.show()
+print("\nEvaluation completed! Check 'trained_models/' for plots.")
 ```
 
 ## Architecture
 
 ```mermaid
 graph TD
-    A[Input Data] --> B[Data Preprocessing]
-    B --> C[CVAE Training]
-    B --> D[CGAN Training]
-    C --> E[Synthetic Data Generation]
-    D --> E
-    E --> F[Data Augmentation]
-    F --> G[LightGBM Training]
-    G --> H[Evaluation]
-    H --> I[Model Persistence]
+    A["Raw Data (CSV)"] --> B["DataPreprocessor"]
+    B --> C["Preprocessed Data"]
+    C --> D["CVAE"]
+    C --> E["CGAN"]
+    D --> F["Synthetic Data (CVAE)"]
+    E --> G["Synthetic Data (CGAN)"]
+    F --> H["Combined Real & Synthetic Data"]
+    G --> H
+    H --> I["LightGBM Classifier Pipeline"]
+    I --> J["Evaluation (Confusion Matrix, ROC, PR Curves)"]
+    J --> K["Best Models Saved"]
 ```
 
 ## Key Components
@@ -195,6 +201,14 @@ graph TD
 - **Conditional GAN**: Produces additional class-specific synthetic data
 - **LightGBM Tuner**: Optimized gradient boosting with automated hyperparameter search
 - **Hybrid Trainer**: Orchestrates iterative training process
+
+
+## Additional Information
+
+- **Hybrid Workflow:** The training loop in `trainer.py` first trains generative models (CVAE and CGAN) to create synthetic data, which is then combined with real data to train a robust LightGBM classifier.
+- **Custom Sampling Strategies:** `lgbm_classifier.py` integrates a function to generate sampling strategies for SMOTE to address severe class imbalance.
+- **Visualization:** Evaluation plots are generated and saved in the output directory to help assess model performance.
+
 
 ## Configuration
 

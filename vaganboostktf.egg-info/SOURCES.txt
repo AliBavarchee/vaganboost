@@ -6,6 +6,7 @@ vaganboostktf/cgan.py
 vaganboostktf/cli.py
 vaganboostktf/cvae.py
 vaganboostktf/data_preprocessor.py
+vaganboostktf/lgbm_classifier.py
 vaganboostktf/lgbm_tuner.py
 vaganboostktf/trainer.py
 vaganboostktf/utils.py

@@ -23,151 +23,115 @@ from sklearn.utils.class_weight import compute_class_weight
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class DataPreprocessor(BaseEstimator, TransformerMixin):
-    """Handles complete data preprocessing pipeline"""
-    
-    def __init__(self, test_size=0.2, random_state=42, stratify=True):
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, RobustScaler, LabelEncoder
+from typing import Tuple, List, Optional, Dict
+
+class DataPreprocessor:
+    """
+    Handles preprocessing for numerical and categorical data, ensuring consistency across training/testing.
+    """
+
+    def __init__(self, scaler_type: str = 'robust', test_size: float = 0.2, random_state: int = 42):
         """
-        Initialize preprocessing parameters
-        
+        Initialize data preprocessor.
+
         Args:
-            test_size (float): Proportion of data for testing (default: 0.2)
-            random_state (int): Random seed (default: 42)
-            stratify (bool): Stratified splitting (default: True)
+            scaler_type (str): Type of feature scaling ('standard' or 'robust').
+            test_size (float): Fraction of data to allocate to test set.
+            random_state (int): Seed for reproducibility.
         """
+        self.scaler_type = scaler_type
         self.test_size = test_size
         self.random_state = random_state
-        self.stratify = stratify
-        self.scaler = StandardScaler()
-        self.class_weights = None
+        self.scaler = None
+        self.label_encoders = {}
         self.feature_columns = None
-        self.target_column = None  # Now properly initialized
+        self.target_column = None
 
-    def __reduce__(self):
-        return (self.__class__, 
-                (self.test_size, self.random_state, self.stratify))
+    def _select_scaler(self):
+        """Select and initialize the scaler based on scaler_type."""
+        if self.scaler_type == 'standard':
+            return StandardScaler()
+        elif self.scaler_type == 'robust':
+            return RobustScaler()
+        else:
+            raise ValueError("Invalid scaler type. Choose 'standard' or 'robust'.")
 
-    def fit(self, X, y=None):
-        """Standard sklearn-compatible fit method"""
-        self.scaler.fit(X)
-        return self
+    def _handle_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Fill missing values with the median for numerical columns."""
+        return df.fillna(df.median(numeric_only=True))
 
-    def transform(self, X, y=None):
-        """Standard sklearn-compatible transform method"""
-        return self.scaler.transform(X)
+    def _encode_categorical(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Encode categorical columns using LabelEncoder."""
+        categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
+        for col in categorical_cols:
+            if col not in self.label_encoders:
+                self.label_encoders[col] = LabelEncoder()
+                df[col] = self.label_encoders[col].fit_transform(df[col])
+            else:
+                df[col] = self.label_encoders[col].transform(df[col])
+        return df
 
-    def prepare_data(self, dataframe, feature_columns, target_column):
+    def prepare_data(self, df: pd.DataFrame, feature_columns: List[str], target_column: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Complete preprocessing workflow
-        
+        Preprocess data: handle missing values, encode categorical features, scale numerical features.
+
         Args:
-            dataframe: Input DataFrame
-            feature_columns: List of feature column names
-            target_column: Name of target column
-            
+            df (pd.DataFrame): Raw data.
+            feature_columns (List[str]): List of feature column names.
+            target_column (str): Target column name.
+
         Returns:
-            Tuple of (X_train_scaled, X_test_scaled, y_train, y_test)
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Scaled X_train, X_test, y_train, y_test.
         """
         self.feature_columns = feature_columns
         self.target_column = target_column
-        self._validate_input(dataframe, feature_columns, target_column)
 
-        X = dataframe[feature_columns].values
-        y = dataframe[target_column].values
+        # Handle missing values
+        df = self._handle_missing_values(df)
 
-        return self._process_data(X, y)
+        # Encode categorical variables (if any)
+        df = self._encode_categorical(df)
 
-    def _validate_input(self, dataframe, feature_columns, target_column):
-        """Validate input data integrity"""
-        if not isinstance(dataframe, pd.DataFrame):
-            raise TypeError("Input must be a pandas DataFrame")
-            
-        missing = [col for col in feature_columns + [target_column] 
-                  if col not in dataframe.columns]
-        if missing:
-            raise ValueError(f"Missing columns: {missing}")
+        # Extract features and target
+        X = df[feature_columns].values
+        y = df[target_column].values
 
-    def _process_data(self, X, y):
-        """Handle data splitting and scaling"""
-        stratify = y if self.stratify else None
+        # Split dataset
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y,
-            test_size=self.test_size,
-            random_state=self.random_state,
-            stratify=stratify
+            X, y, test_size=self.test_size, random_state=self.random_state, stratify=y
         )
 
-        # Fit and transform scaler
-        self.scaler.fit(X_train)
-        X_train_scaled = self.scaler.transform(X_train)
+        # Scale features
+        self.scaler = self._select_scaler()
+        X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
-
-        # Calculate class weights
-        self._calculate_class_weights(y_train)
 
         return X_train_scaled, X_test_scaled, y_train, y_test
 
-    def _calculate_class_weights(self, y_train):
-        """Compute balanced class weights"""
-        classes = np.unique(y_train)
-        weights = compute_class_weight(
-            class_weight="balanced",
-            classes=classes,
-            y=y_train
-        )
-        self.class_weights = dict(zip(classes, weights))
+    def inverse_transform(self, X_scaled: np.ndarray) -> np.ndarray:
+        """
+        Reverse transform scaled features back to original scale.
 
-    def save_pipeline(self, file_path):
-        """Save preprocessing artifacts"""
-        joblib.dump({
-            'scaler': self.scaler,
-            'feature_columns': self.feature_columns,
-            'target_column': self.target_column,
-            'class_weights': self.class_weights
-        }, file_path)
+        Args:
+            X_scaled (np.ndarray): Scaled data.
 
-    @classmethod
-    def load_pipeline(cls, file_path):
-        """Load preprocessing artifacts"""
-        artifacts = joblib.load(file_path)
-        preprocessor = cls()
-        preprocessor.scaler = artifacts['scaler']
-        preprocessor.feature_columns = artifacts['feature_columns']
-        preprocessor.target_column = artifacts['target_column']
-        preprocessor.class_weights = artifacts['class_weights']
-        return preprocessor
+        Returns:
+            np.ndarray: Unscaled data.
+        """
+        if self.scaler is None:
+            raise ValueError("Scaler has not been fitted. Call `prepare_data()` first.")
+        return self.scaler.inverse_transform(X_scaled)
 
-    def get_feature_names(self):
-        """Get original feature names"""
-        return self.feature_columns
+    def save_scaler(self, filepath: str) -> None:
+        """Save the trained scaler."""
+        import joblib
+        joblib.dump(self.scaler, filepath)
 
-    def __getstate__(self):
-        """Custom serialization for pickle"""
-        state = self.__dict__.copy()
-        # Exclude non-pickleable objects
-        del state['scaler']
-        return state
-
-    def __setstate__(self, state):
-        """Custom deserialization for pickle"""
-        self.__dict__.update(state)
-        # Reinitialize scaler
-        self.scaler = StandardScaler()
-        
-    def save(self, path):
-        """Save preprocessor with joblib"""
-        joblib.dump({
-            'state': self.__dict__,
-            'scaler_mean_': self.scaler.mean_,
-            'scaler_scale_': self.scaler.scale_
-        }, path)
-
-    @classmethod
-    def load(cls, path):
-        """Load preprocessor with joblib"""
-        data = joblib.load(path)
-        obj = cls()
-        obj.__dict__.update(data['state'])
-        obj.scaler.mean_ = data['scaler_mean_']
-        obj.scaler.scale_ = data['scaler_scale_']
-        return obj
+    def load_scaler(self, filepath: str) -> None:
+        """Load a previously saved scaler."""
+        import joblib
+        self.scaler = joblib.load(filepath)
