@@ -167,22 +167,6 @@ graph TD
 - **LightGBM Tuner**: Optimized gradient boosting with automated hyperparameter search
 - **Hybrid Trainer**: Orchestrates iterative training process
 
-
-## Architecture 2
-```mermaid
-graph TD;
-    A[Raw Data (CSV)] --> B[DataPreprocessor];
-    B --> C[Preprocessed Data];
-    C --> D[CVAE];
-    C --> E[CGAN];
-    D --> F[Synthetic Data (CVAE)];
-    E --> G[Synthetic Data (CGAN)];
-    F --> H[Combined Real & Synthetic Data];
-    G --> H;
-    H --> I[LightGBM Classifier Pipeline];
-    I --> J[Evaluation (Confusion Matrix, ROC, PR Curves)];
-    J --> K[Best Models Saved];
-
 ## Configuration
 
 Default parameters can be modified through:
