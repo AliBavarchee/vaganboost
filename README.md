@@ -105,7 +105,7 @@ trainer = HybridModelTrainer(config={
         'generator_lr': 0.0002,
         'discriminator_lr': 0.0002
     },
-	'input_path': 'input.csv',
+    'input_path': 'input.csv',
     'model_dir': 'trained_models',
     'cvae_epochs': 100,
     'cgan_epochs': 100,
