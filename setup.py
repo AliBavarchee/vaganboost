@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="vaganboostktf",
-    version="0.9.6",
+    version="0.9.9",
     author="Ali Bavarchee",
     author_email="ali.bavarchee@gmail.com",
     description="Hybrid VAE-GAN with LightGBM for class-imbalanced classification",
@@ -30,8 +30,13 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         "dill>=0.3.9",
+        "dask>=2024.10.0",
         "numpy>=1.21.0",
         "pandas>=1.3.0",
+        "umap>=0.1.1",
+        "imblearn>=0.0",
+        "imbalanced-learn>=0.13.0",
+        "lightgbm>=4.5.0",
         "tensorflow>=2.8.0",
         "keras>=3.8.0",
         "scikit-learn>=1.0.0",

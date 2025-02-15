@@ -69,6 +69,32 @@ from .data_preprocessor import DataPreprocessor
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logging
 os.environ['XLA_FLAGS'] = '--xla_gpu_strict_conv_algorithm_picker=false'
 
+
+import seaborn as sns
+from sklearn.manifold import TSNE
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.decomposition import PCA, TruncatedSVD
+import umap
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedKFold
+from sklearn.base import BaseEstimator, TransformerMixin
+from imblearn.over_sampling import SMOTE
+import joblib
+from joblib import Memory, dump
+from sklearn.preprocessing import RobustScaler, PolynomialFeatures, label_binarize
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, precision_recall_curve, average_precision_score
+from lightgbm import LGBMClassifier
+from pathlib import Path
+from imblearn.pipeline import Pipeline as imbPipeline
+
+# Import from VaganBoost package
+from .utils import plot_confusion_matrix, plot_roc_curves, plot_pr_curves, DecompositionSwitcher
+from .data_preprocessor import DataPreprocessor
+
+# CUDA Warning Suppression Edition
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logging
+os.environ['XLA_FLAGS'] = '--xla_gpu_strict_conv_algorithm_picker=false'
+
 import logging
 logging.getLogger('lightgbm').setLevel(logging.WARNING)
 import warnings
@@ -83,47 +109,55 @@ warnings.filterwarnings('ignore')
 
 def generate_sampling_strategies(y_train):
     """
-    Generate strategies focused on severe class imbalance.
+    Generate sampling strategies for balancing data in a generic way.
     
+    For binary classification, returns a list of float ratios (minority/majority).
+    For multi-class classification, returns a list of dictionaries mapping each class label
+    to a desired target count.
+    
+    This function works for any number of classes (from 2 to even 1000+ classes).
+
     Args:
-        y_train (pd.Series): Training labels.
-    
+        y_train (array-like or pd.Series): Training labels.
+        
     Returns:
-        list: A list of sampling strategies. Strategies include basic keywords ('not majority', 'minority')
-              and custom dictionaries with target counts for each class.
+        list: A list of sampling strategies.
     """
     # Ensure y_train is a pandas Series
     if not isinstance(y_train, pd.Series):
         y_train = pd.Series(y_train)
     
     class_counts = y_train.value_counts().to_dict()
-    # Assuming class '1' is the majority class
-    majority_count = class_counts.get(1, None)
-    if majority_count is None:
-        raise ValueError("Class 1 must be present in y_train as the majority class.")
+    n_classes = len(class_counts)
     
     strategies = []
     
-    # Basic strategies (SMOTE can sometimes interpret these special strings)
-    strategies.extend(['not majority', 'minority'])
-    
-    # Custom strategies for severe imbalance
-    class3_targets = [
-        int(class_counts.get(3, 0) * 3),            # 3x minority class 3
-        min(class_counts.get(2, 0), int(majority_count * 0.1)),  # 10% of majority for class 2
-        class_counts.get(2, 0)                        # Match class 2 size
-    ]
-    
-    valid_targets = [t for t in class3_targets if t > class_counts.get(3, 0)]
-    
-    for target in valid_targets:
-        strategies.append({
-            3: target,
-            0: class_counts.get(0, 0),
-            1: majority_count,
-            2: class_counts.get(2, 0)
-        })
-    
+    if n_classes == 2:
+        # For binary classification, generate some float ratios.
+        # These ratios represent the desired ratio of minority to majority samples.
+        strategies.extend([0.5, 0.75, 1.0, 1.25, 1.5])
+    else:
+        # For multi-class classification, generate dictionary strategies.
+        # Identify the majority class and its count.
+        majority_class = max(class_counts, key=class_counts.get)
+        majority_count = class_counts[majority_class]
+        
+        # Define multipliers to scale minority classes.
+        multipliers = [1.0, 1.5, 2.0, 3.0]
+        
+        for m in multipliers:
+            strat = {}
+            # For the majority class, keep its original count.
+            strat[majority_class] = majority_count
+            # For all other classes, compute target counts.
+            for cls, count in class_counts.items():
+                if cls != majority_class:
+                    # Upsample the minority class by the multiplier but do not exceed the majority count.
+                    target = int(min(majority_count, count * m))
+                    # Ensure the target is at least the original count.
+                    target = max(target, count)
+                    strat[cls] = target
+            strategies.append(strat)
     return strategies
 
 
@@ -173,8 +207,8 @@ def train_lgbm_pipeline(input_path: str, output_path: str, dim_reducer="pca"):
         ))
     ])
     
-    # Generate sampling strategies from y_train (converted to Series)
-    sampling_strategies = generate_sampling_strategies(pd.Series(y_train))
+    # Generate sampling strategies generically from y_train
+    sampling_strategies = generate_sampling_strategies(y_train)
     
     # Hyperparameter tuning: override the decomposition step and sampler strategy
     param_dist = {
@@ -185,8 +219,7 @@ def train_lgbm_pipeline(input_path: str, output_path: str, dim_reducer="pca"):
         'sampler__k_neighbors': [3, 5, 7],
         'classifier__learning_rate': [0.01, 0.1],
         'classifier__n_estimators': [100, 300],
-        'classifier__max_depth': [7, 10],
-        'classifier__class_weight': [{0:1, 1:1, 2:1, 3:10}]
+        'classifier__max_depth': [7, 10]
     }
     
     # Hyperparameter tuning using RandomizedSearchCV
@@ -230,4 +263,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     train_lgbm_pipeline(args.input_path, args.output_path, dim_reducer=args.dim_reducer)
-

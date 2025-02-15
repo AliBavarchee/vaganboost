@@ -27,7 +27,7 @@ class HybridModelTrainer:
             config (dict): Training configuration parameters.
             random_state (int): Seed for reproducibility.
         """
-        self.config = config or self._default_config()
+        self.config = config or self._default_config() 
         self.components = {
             'cvae': None,
             'cgan': None,
@@ -54,6 +54,7 @@ class HybridModelTrainer:
             'lgbm_iterations': 30,
             'samples_per_class': 100,
             'model_dir': 'trained_models',
+            'input_path': 'input.csv',
             'cvae_params': {
                 'input_dim': 25,
                 'latent_dim': 8,
@@ -93,7 +94,7 @@ class HybridModelTrainer:
 
         # Initialize LightGBM Tuner
         self.components['lgb_tuner'] = LightGBMTuner(
-            input_path="output.csv",
+            input_path=self.config['input_path'],
             output_path=self.config['model_dir']
         )
 

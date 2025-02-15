@@ -25,7 +25,7 @@ class LightGBMTuner(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(self, 
-                 input_path: str = "output.csv",
+                 input_path: str,
                  output_path: str = "trained_models",
                  n_iter: int = 30,
                  cv: int = 3,
