@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: vaganboostktf
-Version: 0.9.9
+Version: 1.1.0
 Summary: Hybrid VAE-GAN with LightGBM for class-imbalanced classification
 Home-page: https://github.com/AliBavarchee/vaganboost
 Author: Ali Bavarchee

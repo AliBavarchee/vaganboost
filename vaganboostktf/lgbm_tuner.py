@@ -19,9 +19,28 @@ from .data_preprocessor import DataPreprocessor  # Standardized preprocessing
 from .lgbm_classifier import train_lgbm_pipeline  # Custom LGBM pipeline
 from .utils import DecompositionSwitcher  # PCA/LDA/TruncatedSVD switcher
 
+import lightgbm as lgb
+import numpy as np
+import pandas as pd
+import joblib
+from pathlib import Path
+import pickle
+from scipy.stats import randint as sp_randint, uniform as sp_uniform
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.class_weight import compute_class_weight
+from typing import Optional, Dict, Any
+import warnings
+
+# Import modules from VaganBoost package
+from .data_preprocessor import DataPreprocessor
+from .lgbm_classifier import train_lgbm_pipeline  # Custom LGBM pipeline
+from .utils import DecompositionSwitcher  # PCA/LDA/TruncatedSVD switcher
+
 class LightGBMTuner(BaseEstimator, ClassifierMixin):
     """
     Hyperparameter tuning and training for LGBMClassifier with preprocessing and feature selection.
+    Now extended to also load per-class feature weights.
     """
 
     def __init__(self, 
@@ -54,21 +73,28 @@ class LightGBMTuner(BaseEstimator, ClassifierMixin):
         self.best_model_ = None
         self.best_params_ = None
         self.class_weights_ = None
+        self.feature_weights_ = None 
 
     def tune(self):
         """
         Uses `train_lgbm_pipeline()` from `lgbm_classifier.py` to train the best LGBM model.
+        Loads the optimized model and feature weights (if available).
         """
         train_lgbm_pipeline(self.input_path, self.output_path)
 
         # Load the best trained model
         self.best_model_ = joblib.load(f"{self.output_path}/optimized_model.joblib")
 
-        # Load best parameters if available
+        # Load best parameters if available (if file exists)
         best_params_path = Path(self.output_path) / "best_parameters.txt"
         if best_params_path.exists():
             with open(best_params_path, "r") as f:
                 self.best_params_ = eval(f.read())  # Convert text to dictionary
+
+        # Load feature weights if available
+        feature_weights_path = Path(self.output_path) / "feature_weights_per_class.csv"
+        if feature_weights_path.exists():
+            self.feature_weights_ = pd.read_csv(feature_weights_path, index_col=0)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -98,23 +124,21 @@ class LightGBMTuner(BaseEstimator, ClassifierMixin):
             raise ValueError("Model not trained. Call `tune()` first.")
         return self.best_model_.predict_proba(X)
 
-    def save(self, file_path: str) -> None:
+    def get_feature_weights(self) -> Optional[pd.DataFrame]:
         """
-        Save the best trained model.
+        Get feature weights for each class.
 
-        Args:
-            file_path (str): Path to save the model.
+        Returns:
+            Optional[pd.DataFrame]: DataFrame of feature weights (classes × features).
         """
-        if self.best_model_ is None:
-            raise ValueError("No trained model to save.")
-
-        Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump({'best_model': self.best_model_, 'best_params': self.best_params_}, file_path)
+        if self.feature_weights_ is None:
+            warnings.warn("Feature weights not available. Call `tune()` first.")
+        return self.feature_weights_
 
     @classmethod
     def load(cls, file_path: str) -> 'LightGBMTuner':
         """
-        Load a saved model.
+        Load a saved model and feature weights.
 
         Args:
             file_path (str): Path to the saved model.
@@ -123,7 +147,39 @@ class LightGBMTuner(BaseEstimator, ClassifierMixin):
             LightGBMTuner: Loaded instance.
         """
         data = joblib.load(file_path)
-        tuner = cls()
+        tuner = cls(data.get("input_path", ""))
         tuner.best_model_ = data['best_model']
-        tuner.best_params_ = data['best_params']
+        tuner.best_params_ = data.get('best_params', None)
+        tuner.feature_weights_ = data.get('feature_weights', None)
         return tuner
+
+
+    # def save(self, file_path: str) -> None:
+        # """
+        # Save the best trained model.
+
+        # Args:
+            # file_path (str): Path to save the model.
+        # """
+        # if self.best_model_ is None:
+            # raise ValueError("No trained model to save.")
+
+        # Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+        # joblib.dump({'best_model': self.best_model_, 'best_params': self.best_params_}, file_path)
+
+    # @classmethod
+    # def load(cls, file_path: str) -> 'LightGBMTuner':
+        # """
+        # Load a saved model.
+
+        # Args:
+            # file_path (str): Path to the saved model.
+
+        # Returns:
+            # LightGBMTuner: Loaded instance.
+        # """
+        # data = joblib.load(file_path)
+        # tuner = cls()
+        # tuner.best_model_ = data['best_model']
+        # tuner.best_params_ = data['best_params']
+        # return tuner

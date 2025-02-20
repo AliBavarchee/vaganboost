@@ -12,6 +12,20 @@ from .cgan import CGAN
 from .lgbm_tuner import LightGBMTuner
 from .utils import plot_confusion_matrix, plot_roc_curves, plot_pr_curves
 
+#!pip instrall dill
+import os
+import numpy as np
+import joblib
+import tensorflow as tf
+from tensorflow.keras import callbacks
+from typing import Dict, Tuple, Optional
+import pickle
+from .data_preprocessor import DataPreprocessor
+from .cvae import CVAE
+from .cgan import CGAN
+from .lgbm_tuner import LightGBMTuner
+from .utils import plot_confusion_matrix, plot_roc_curves, plot_pr_curves
+
 class HybridModelTrainer:
     """
     Orchestrates the hybrid workflow: trains generative models (CVAE, CGAN) and an LGBM classifier.
@@ -54,7 +68,7 @@ class HybridModelTrainer:
             'lgbm_iterations': 30,
             'samples_per_class': 100,
             'model_dir': 'trained_models',
-            'input_path': 'input.csv',
+            'input_path': 'input.csv',  # Generic input path; user can override this
             'cvae_params': {
                 'input_dim': 25,
                 'latent_dim': 8,
@@ -92,7 +106,7 @@ class HybridModelTrainer:
         # Initialize CGAN
         self.components['cgan'] = CGAN(**self.config['cgan_params'])
 
-        # Initialize LightGBM Tuner
+        # Initialize LightGBM Tuner with a generic input path from the config
         self.components['lgb_tuner'] = LightGBMTuner(
             input_path=self.config['input_path'],
             output_path=self.config['model_dir']
@@ -191,10 +205,17 @@ class HybridModelTrainer:
 
             # 4. Evaluate model
             current_score = self.evaluate_model(X_test, y_test)
+            print(f"Iteration {iteration+1}: Accuracy = {current_score:.4f}")
 
-            # 5. Save best models
+            # 5. Save best model if improved
             if current_score > self.best_score:
                 print(f"New best score: {current_score:.4f} (previous: {self.best_score:.4f})")
                 self.best_score = current_score
+
+        # Optionally, retrieve and print feature weights from the LightGBM tuner
+        feature_weights = self.components['lgb_tuner'].get_feature_weights()
+        if feature_weights is not None:
+            print("Per-class feature weights:")
+            print(feature_weights)
 
 print("Training completed! Best models saved in 'trained_models' directory.")
